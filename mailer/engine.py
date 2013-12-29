@@ -29,14 +29,12 @@ LOCK_WAIT_TIMEOUT = getattr(settings, "MAILER_LOCK_WAIT_TIMEOUT", -1)
 EMAIL_BACKEND = getattr(settings, "MAILER_EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 
 
-def prioritize():
+def prioritize(limit):
     """
     Yield the messages in the queue in the order they should be sent.
     """
     
-    limit = 4
-    num_yielded = 0
-    messages_remaining = 4
+    messages_remaining = limit
 
     while True:
         while (Message.objects.high_priority().count() or Message.objects.medium_priority().count()) and messages_remaining > 0:
@@ -57,7 +55,7 @@ def prioritize():
             break
 
 
-def send_all():
+def send_all(limit):
     """
     Send all eligible messages in the queue.
     """
@@ -83,7 +81,7 @@ def send_all():
     
     try:
         connection = None
-        for message in prioritize():
+        for message in prioritize(limit):
             try:
                 if connection is None:
                     connection = get_connection(backend=EMAIL_BACKEND)
