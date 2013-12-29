@@ -34,16 +34,26 @@ def prioritize():
     Yield the messages in the queue in the order they should be sent.
     """
     
+    limit = 4
+    num_yielded = 0
+    messages_remaining = 4
+
     while True:
-        while Message.objects.high_priority().count() or Message.objects.medium_priority().count():
-            while Message.objects.high_priority().count():
-                for message in Message.objects.high_priority().order_by("when_added"):
+        while (Message.objects.high_priority().count() or Message.objects.medium_priority().count()) and messages_remaining > 0:
+            while Message.objects.high_priority().count() and messages_remaining > 0:
+                for message in Message.objects.high_priority().order_by("when_added")[:messages_remaining]:
                     yield message
-            while Message.objects.high_priority().count() == 0 and Message.objects.medium_priority().count():
+                    messages_remaining-=1
+                    logging.debug("%d messages remaining (a)" % messages_remaining)
+            while Message.objects.high_priority().count() == 0 and Message.objects.medium_priority().count() and messages_remaining > 0:
                 yield Message.objects.medium_priority().order_by("when_added")[0]
-        while Message.objects.high_priority().count() == 0 and Message.objects.medium_priority().count() == 0 and Message.objects.low_priority().count():
+                messages_remaining-=1
+                logging.debug("%d messages remaining (b)" % messages_remaining)
+        while Message.objects.high_priority().count() == 0 and Message.objects.medium_priority().count() == 0 and Message.objects.low_priority().count() and messages_remaining > 0:
             yield Message.objects.low_priority().order_by("when_added")[0]
-        if Message.objects.non_deferred().count() == 0:
+            messages_remaining-=1
+            logging.debug("%d messages remaining (c)" % messages_remaining)
+        if Message.objects.non_deferred().count() == 0 or messages_remaining == 0:
             break
 
 
