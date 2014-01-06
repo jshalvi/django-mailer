@@ -11,7 +11,7 @@ PAUSE_SEND = getattr(settings, "MAILER_PAUSE_SEND", False)
 
 
 class Command(BaseCommand):
-    args = "<limit>"
+    args = "<limit> <throttle=0>"
     help = "Send a limited number of emails."
     
     def handle(self, *args, **options):
@@ -20,8 +20,13 @@ class Command(BaseCommand):
         # if PAUSE_SEND is turned on don't do anything.
         limit = int(args[0])
 
+        try:
+            throttle = float(args[1])
+        except IndexError:
+            throttle = 0
+
         if not PAUSE_SEND:
-            logging.info("Sending %d emails" % limit)
-            send_all(limit)
+            logging.info("Sending %d emails at" % limit)
+            send_all(limit, throttle)
         else:
             logging.info("sending is paused, quitting.")

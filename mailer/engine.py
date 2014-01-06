@@ -55,7 +55,7 @@ def prioritize(limit):
             break
 
 
-def send_all(limit):
+def send_all(limit, throttle=0):
     """
     Send all eligible messages in the queue.
     """
@@ -99,6 +99,10 @@ def send_all(limit):
                 deferred += 1
                 # Get new connection, it case the connection itself has an error.
                 connection = None
+
+            if throttle > 0:
+                logging.debug("throttling to %d emails/second" % throttle)
+                time.sleep(throttle)
     finally:
         logging.debug("releasing lock...")
         lock.release()
